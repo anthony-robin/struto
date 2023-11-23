@@ -1,3 +1,3 @@
-module NostrRuby
+module Struto
   VERSION = '0.2.0'
 end

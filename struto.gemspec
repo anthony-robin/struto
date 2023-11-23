@@ -1,13 +1,13 @@
 $:.unshift File.expand_path('../lib', __FILE__)
-require 'nostr_ruby/version'
+require 'struto/version'
 
 Gem::Specification.new do |s|
-  s.name          = 'nostr_ruby'
-  s.version       = NostrRuby::VERSION
+  s.name          = 'struto'
+  s.version       = Struto::VERSION
   s.summary       = 'A Ruby library to interact with the Nostr protocol'
-  s.description   = 'NostrRuby is a Ruby library to interact with the Nostr protocol. At this stage the focus is the creation of public events and private encrypted messages.'
-  s.authors       = ['Daniele Tonon']
-  s.homepage      = 'https://github.com/dtonon/nostr-ruby'
+  s.description   = 'Struto is a Ruby library to interact with the Nostr protocol. At this stage the focus is the creation of public events and private encrypted messages.'
+  s.authors       = ['Anthony Robin']
+  s.homepage      = 'https://github.com/anthony-robin/struto'
   s.licenses      = ['MIT']
   s.files         = Dir.glob('{bin/*,lib/**/*,[A-Z]*}')
   s.platform      = Gem::Platform::RUBY

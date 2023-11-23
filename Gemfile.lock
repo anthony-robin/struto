@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    nostr_ruby (0.2.0)
+    struto (0.2.0)
       base64 (~> 0.1.1)
       bech32 (~> 1.3.0)
       bip-schnorr (~> 0.4.0)
@@ -20,20 +20,21 @@ GEM
     ecdsa (1.2.0)
     event_emitter (0.2.6)
     json (2.6.3)
-    thor (1.2.1)
-    unicode-emoji (3.3.1)
+    thor (1.3.0)
+    unicode-emoji (3.3.2)
       unicode-version (~> 1.0)
     unicode-version (1.3.0)
-    websocket (1.2.9)
-    websocket-client-simple (0.6.0)
+    websocket (1.2.10)
+    websocket-client-simple (0.6.1)
       event_emitter
       websocket
 
 PLATFORMS
   arm64-darwin-21
+  x86_64-darwin-21
 
 DEPENDENCIES
-  nostr_ruby!
+  struto!
 
 BUNDLED WITH
    2.3.14
