@@ -266,3 +266,11 @@ nostr.build_poll_event(
 #   "sig"=>
 #    "feda520e93bf05a81396ca806253b24567c2f7f7592d0b17389527f20f1fa528695414b1dc12896b4876e0ee50cb0e818a3ee7919e527bd59b5373825897e1bb"}]
 ```
+
+### Publish to Nostr
+
+Once you have build your event, you can broadcast it to the relay:
+
+```ruby
+nostr.post_event(event, 'wss://relay.damus.com')
+```

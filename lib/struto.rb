@@ -317,22 +317,27 @@ module Struto
       @pow_difficulty_target = n
     end
 
-    def test_post_event(event, relay)
+    def post_event(event, relay)
       response = nil
-      ws = WebSocket::Client::Simple.connect relay
-      ws.on :message do |msg|
-        puts msg
-        response = JSON.parse(msg.data)
-        ws.close
-      end
+      ws = WebSocket::Client::Simple.connect(relay)
+
       ws.on :open do
         ws.send event.to_json
       end
-      while response.nil? do
-        sleep 0.1
-      end
-      response[0] == 'OK'
-    end
 
+      ws.on :message do |msg|
+        response = JSON.parse(msg.data.force_encoding('UTF-8'))
+        ws.close
+      end
+
+      ws.on :error do |e|
+        puts 'WebSocket Error'
+        ws.close
+      end
+
+      sleep 0.1 while response.nil?
+
+      response
+    end
   end
 end
