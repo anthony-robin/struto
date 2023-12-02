@@ -33,16 +33,30 @@ nostr.keys
 ```
 
 ### Set the user metadata
+
+- [NIP-01](https://github.com/nostr-protocol/nips/blob/master/01.md)
+- [NIP-24](https://github.com/nostr-protocol/nips/blob/master/24.md)
+
 ```ruby
-metadata = nostr.build_metadata_event("Mr Robot", "I walk around the city", "https://upload.wikimedia.org/wikipedia/commons/3/35/Mr_robot_photo.jpg", "mrrobot@mrrobot.com")
-#["EVENT",
-# {:pubkey=>"9be59510fa12b77340bb57e555bac716455fedf46d1a354185d4e72bd0340b6f",
-#  :created_at=>1671546067,
-#  :kind=>0,
-#  :tags=>[],
-#  :content=>"{\"name\":\"Mr Robot\",\"about\":\"I walk around the city\",\"picture\":\"https://upload.wikimedia.org/wikipedia/commons/3/35/Mr_robot_photo.jpg\",\"nip05\":\"mrrobot@mrrobot.com\"}",
-#  "id"=>"3bd77596ea999dde26689c24370dc4adfa66c33abf1b4c23bf863a516106cda2",
-#  "sig"=>"2ff752e9f3ed824e7677c41c73728315f0532f3437857774d7a50a577563f391785afd1f84bef3e3574939b14cf096380d4790375953c793504ffcf2f0467d69"}]
+metadata = nostr.build_metadata_event(
+  name: "@mr_robot",
+  display_name: "Mr Robot",
+  about: "I walk around the city",
+  picture: "https://upload.wikimedia.org/wikipedia/commons/3/35/Mr_robot_photo.jpg",
+  banner: "https://upload.wikimedia.org/wikipedia/commons/3/35/Mr_robot_photo.jpg",
+  nip05: "mrrobot@mrrobot.com",
+  lud16: "sendmesats@mrrobot.com",
+  website: "https://mrrobot.com"
+)
+# =>
+# ["EVENT",
+#  {:pubkey=>"9be59510fa12b77340bb57e555bac716455fedf46d1a354185d4e72bd0340b6f",
+#   :created_at=>1671546067,
+#   :kind=>0,
+#   :tags=>[],
+#   :content=> "{\"name\":\"@mr_robot\",\"display_name\":\"Mr Robot\",\"about\":\"I walk around the city\",\"picture\":\"https://upload.wikimedia.org/wikipedia/commons/3/35/Mr_robot_photo.jpg\",\"banner\":\"https://upload.wikimedia.org/wikipedia/commons/3/35/Mr_robot_photo.jpg\",\"nip05\":\"mrrobot@mrrobot.com\",\"lud16\":\"sendmesats@mrrobot.com\",\"website\":\"https://mrrobot.com\"}",
+#   "id"=>"3bd77596ea999dde26689c24370dc4adfa66c33abf1b4c23bf863a516106cda2",
+#   "sig"=>"2ff752e9f3ed824e7677c41c73728315f0532f3437857774d7a50a577563f391785afd1f84bef3e3574939b14cf096380d4790375953c793504ffcf2f0467d69"}]
 ```
 
 ### Create a post
@@ -211,4 +225,44 @@ Struto::Nostr.verify_delegation_signature(delegatee_pubkey, tag)
 ```ruby
 nostr.reset_delegation
 #=> nil
+```
+
+### Create a Poll event (NIP-69)
+
+- [NIP-69](https://github.com/nostr-protocol/nips/pull/320) (unmerged yet)
+
+```ruby
+nostr.build_poll_event(
+  "What is your favorite color ?",
+  [
+    "Red",
+    "Blue",
+    "Green",
+    "Yellow",
+    "Other"
+  ],
+  value_minimum: '21', # optional
+  value_maximum: '42', # optional
+  closed_at: '1703352127' # optional
+)
+#=>
+# ["EVENT",
+#  {:pubkey=>"8758a9fd232f0fe9a7afc8456a40d57bc46e2a586d37641c2d6c77bcac938f93",
+#   :created_at=>1700760127,
+#   :kind=>6969,
+#   :tags=>
+#    [["p", "8758a9fd232f0fe9a7afc8456a40d57bc46e2a586d37641c2d6c77bcac938f93"],
+#     ["poll_option", "0", "Red"],
+#     ["poll_option", "1", "Blue"],
+#     ["poll_option", "2", "Green"],
+#     ["poll_option", "3", "Yellow"],
+#     ["poll_option", "4", "Other"],
+#     ["value_minimum", "21"],
+#     ["value_maximum", "42"],
+#     ["closed_at", "1703352127"]],
+#   :content=>
+#    "What is your favorite color ?",
+#   "id"=>"35e67f8259d0004900c88df9ed4d3722bef024514e83412b15e4515612824c5e",
+#   "sig"=>
+#    "feda520e93bf05a81396ca806253b24567c2f7f7592d0b17389527f20f1fa528695414b1dc12896b4876e0ee50cb0e818a3ee7919e527bd59b5373825897e1bb"}]
 ```

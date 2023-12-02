@@ -116,18 +116,31 @@ module Struto
       ['EVENT', event]
     end
 
-    def build_metadata_event(name, about, picture, nip05)
-      data = {}
-      data[:name] = name if name
-      data[:about] = about if about
-      data[:picture] = picture if picture
-      data[:nip05] = nip05 if nip05
+    # Metadata (NIP-01 / NIP-24)
+    # @see https://github.com/nostr-protocol/nips/blob/master/01.md
+    # @see https://github.com/nostr-protocol/nips/blob/master/24.md
+    #
+    # @param metadata [Hash] list of nostr account metadata
+    # @option metadata [String] :name
+    # @option metadata [String] :display_name
+    # @option metadata [String] :about the profile description
+    # @option metadata [String] :picture the profile picture
+    # @option metadata [String] :banner the profile banner
+    # @option metadata [String] :nip05 the NIP-05 verification address
+    # @option metadata [String] :lud16 the lightning network address
+    # @option metadata [String] :website
+    def build_metadata_event(metadata = {})
+      data = metadata.slice(
+        :name, :display_name, :about, :picture,
+        :banner, :nip05, :lud16, :website
+      )
+
       event = {
-        "pubkey": @public_key,
-        "created_at": Time.now.utc.to_i,
-        "kind": 0,
-        "tags": [],
-        "content": data.to_json
+        pubkey: @public_key,
+        created_at: Time.now.utc.to_i,
+        kind: 0,
+        tags: [],
+        content: data.to_json
       }
 
       build_event(event)
@@ -208,6 +221,45 @@ module Struto
         "kind": 7,
         "tags": [['e', event], ['p', author]],
         "content": reaction
+      }
+
+      build_event(event)
+    end
+
+    # Poll Notes (NIP-69)
+    # @see https://github.com/nostr-protocol/nips/pull/320
+    #
+    # @param body [String] note body content
+    # @param options [Array] list of poll options
+    # @param metadata [Hash] list of poll metadata
+    # @option metadata [String] :value_minimum the minimum amount of satoshis to pay
+    # @option metadata [String] :value_maximum the maximum amount of satoshis to pay
+    # @option metadata [String] :closed_at the timestamp to close the poll at
+    # @option metadata [String] :reference the parent note to link to
+    def build_poll_event(body, options, metadata = {})
+      raise 'Invalid options' unless options.is_a?(Array) && options.count >= 2
+
+      sanitized_metadata = metadata.compact.slice(
+        :value_minimum, :value_maximum, :closed_at, :reference
+      )
+
+      tags = [['p', @public_key]].tap do |data|
+        options.each_with_index do |option, index|
+          data.push ['poll_option', index.to_s, option]
+        end
+
+        data.push ['value_minimum', sanitized_metadata[:value_minimum].to_s] unless sanitized_metadata[:value_minimum].blank?
+        data.push ['value_maximum', sanitized_metadata[:value_maximum].to_s] unless sanitized_metadata[:value_maximum].blank?
+        data.push ['closed_at', sanitized_metadata[:closed_at].to_s] unless sanitized_metadata[:closed_at].blank?
+        data.push ['e', sanitized_metadata[:reference]] unless sanitized_metadata[:reference].blank?
+      end
+
+      event = {
+        "pubkey": @public_key,
+        "created_at": Time.now.utc.to_i,
+        "kind": 6969,
+        "tags": tags,
+        "content": body
       }
 
       build_event(event)
