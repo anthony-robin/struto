@@ -2,11 +2,11 @@
 
 A ruby library to interact with the [Nostr Protocol](https://github.com/nostr-protocol/nostr).
 
----
+> [!NOTE]
+> Struto is highly inspired by [nostr-ruby](https://github.com/dtonon/nostr-ruby) which is not maintained anymore.
 
-**Note**: this is a first proof of concept version, the API will probably change in the near future.
-
----
+> [!CAUTION]
+> This is a first proof of concept version, the API will probably change in the near future.
 
 ## Installation 
 
