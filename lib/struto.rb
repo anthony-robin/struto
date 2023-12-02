@@ -16,8 +16,25 @@ module Struto
 
     attr_reader :private_key, :public_key, :pow_difficulty_target, :nip26_delegation_tag
 
+    def self.to_hex(bech32_key)
+      public_addr = CustomAddr.new(bech32_key)
+      public_addr.to_scriptpubkey
+    end
+
+    def self.to_bech32(hex_key, hrp)
+      custom_addr = CustomAddr.new
+      custom_addr.scriptpubkey = hex_key
+      custom_addr.hrp = hrp
+      custom_addr.addr
+    end
+
+    def self.verify_delegation_signature(delegatee_pubkey, tag)
+      delegation_message_sha256 = Digest::SHA256.hexdigest("nostr:delegation:#{delegatee_pubkey}:#{tag[2]}")
+      Schnorr.valid_sig?(Array(delegation_message_sha256).pack('H*'), Array(tag[1]).pack('H*'), Array(tag[3]).pack('H*'))
+    end
+
     def initialize(key)
-      hex_private_key =  if key[:private_key]&.include?('nsec')
+      hex_private_key = if key[:private_key]&.include?('nsec')
         Struto::Nostr.to_hex(key[:private_key])
       else
         key[:private_key]
@@ -52,22 +69,10 @@ module Struto
       bech32_keys
     end
 
-    def self.to_hex(bech32_key)
-      public_addr = CustomAddr.new(bech32_key)
-      public_addr.to_scriptpubkey
-    end
-
-    def self.to_bech32(hex_key, hrp)
-      custom_addr = CustomAddr.new
-      custom_addr.scriptpubkey = hex_key
-      custom_addr.hrp = hrp
-      custom_addr.addr
-    end
-
     def sign_event(event)
       raise 'Invalid pubkey' unless event[:pubkey].is_a?(String) && event[:pubkey].size == 64
       raise 'Invalid created_at' unless event[:created_at].is_a?(Integer)
-      raise 'Invalid kind' unless (0..29_999).include?(event[:kind])
+      raise 'Invalid kind' unless (0..29_999).cover?(event[:kind])
       raise 'Invalid tags' unless event[:tags].is_a?(Array)
       raise 'Invalid content' unless event[:content].is_a?(String)
 
@@ -100,10 +105,10 @@ module Struto
 
       private_key = Array(@private_key).pack('H*')
       message = Array(serialized_event_sha256).pack('H*')
-      event_signature = Schnorr.sign(message, private_key).encode.unpack('H*')[0]
+      event_signature = Schnorr.sign(message, private_key).encode.unpack1('H*')
 
-      event['id'] = serialized_event_sha256
-      event['sig'] = event_signature
+      event[:id] = serialized_event_sha256
+      event[:sig] = event_signature
       event
     end
 
@@ -112,6 +117,7 @@ module Struto
         payload[:tags] = [] unless payload[:tags]
         payload[:tags] << @nip26_delegation_tag
       end
+
       event = sign_event(payload)
       ['EVENT', event]
     end
@@ -148,25 +154,25 @@ module Struto
 
     def build_note_event(text, channel_key = nil)
       event = {
-        "pubkey": @public_key,
-        "created_at": Time.now.utc.to_i,
-        "kind": channel_key ? 42 : 1,
-        "tags": channel_key ? [['e', channel_key]] : [],
-        "content": text
+        pubkey: @public_key,
+        created_at: Time.now.utc.to_i,
+        kind: channel_key ? 42 : 1,
+        tags: channel_key ? [['e', channel_key]] : [],
+        content: text
       }
 
       build_event(event)
     end
 
     def build_recommended_relay_event(relay)
-      raise 'Invalid relay' unless relay.start_with?('wss://') || relay.start_with?('ws://')
+      raise 'Invalid relay' unless relay.start_with?('wss://', 'ws://')
 
       event = {
-        "pubkey": @public_key,
-        "created_at": Time.now.utc.to_i,
-        "kind": 2,
-        "tags": [],
-        "content": relay
+        pubkey: @public_key,
+        created_at: Time.now.utc.to_i,
+        kind: 2,
+        tags: [],
+        content: relay
       }
 
       build_event(event)
@@ -174,11 +180,11 @@ module Struto
 
     def build_contact_list_event(contacts)
       event = {
-        "pubkey": @public_key,
-        "created_at": Time.now.utc.to_i,
-        "kind": 3,
-        "tags": contacts.map { |c| ['p'] + c },
-        "content": ''
+        pubkey: @public_key,
+        created_at: Time.now.utc.to_i,
+        kind: 3,
+        tags: contacts.map { |c| ['p'] + c },
+        content: ''
       }
 
       build_event(event)
@@ -188,11 +194,11 @@ module Struto
       encrypted_text = CryptoTools.aes_256_cbc_encrypt(@private_key, recipient_public_key, text)
 
       event = {
-        "pubkey": @public_key,
-        "created_at": Time.now.utc.to_i,
-        "kind": 4,
-        "tags": [['p', recipient_public_key]],
-        "content": encrypted_text
+        pubkey: @public_key,
+        created_at: Time.now.utc.to_i,
+        kind: 4,
+        tags: [['p', recipient_public_key]],
+        content: encrypted_text
       }
 
       build_event(event)
@@ -200,11 +206,11 @@ module Struto
 
     def build_deletion_event(events, reason = '')
       event = {
-        "pubkey": @public_key,
-        "created_at": Time.now.utc.to_i,
-        "kind": 5,
-        "tags": events.map{ |e| ['e', e] },
-        "content": reason
+        pubkey: @public_key,
+        created_at: Time.now.utc.to_i,
+        kind: 5,
+        tags: events.map { |e| ['e', e] },
+        content: reason
       }
 
       build_event(event)
@@ -216,11 +222,11 @@ module Struto
       raise 'Invalid event' unless author.is_a?(String) && author.size == 64
 
       event = {
-        "pubkey": @public_key,
-        "created_at": Time.now.utc.to_i,
-        "kind": 7,
-        "tags": [['e', event], ['p', author]],
-        "content": reaction
+        pubkey: @public_key,
+        created_at: Time.now.utc.to_i,
+        kind: 7,
+        tags: [['e', event], ['p', author]],
+        content: reaction
       }
 
       build_event(event)
@@ -255,11 +261,11 @@ module Struto
       end
 
       event = {
-        "pubkey": @public_key,
-        "created_at": Time.now.utc.to_i,
-        "kind": 6969,
-        "tags": tags,
-        "content": body
+        pubkey: @public_key,
+        created_at: Time.now.utc.to_i,
+        kind: 6969,
+        tags: tags,
+        content: body
       }
 
       build_event(event)
@@ -267,7 +273,7 @@ module Struto
 
     def decrypt_dm(event)
       data = event[1]
-      sender_public_key = data[:pubkey] != @public_key ? data[:pubkey] : data[:tags][0][1]
+      sender_public_key = data[:pubkey] == @public_key ? data[:tags][0][1] : data[:pubkey]
       encrypted = data[:content].split('?iv=')[0]
       iv = data[:content].split('?iv=')[1]
       CryptoTools.aes_256_cbc_decrypt(@private_key, sender_public_key, encrypted, iv)
@@ -275,9 +281,9 @@ module Struto
 
     def get_delegation_tag(delegatee_pubkey, conditions)
       delegation_message_sha256 = Digest::SHA256.hexdigest("nostr:delegation:#{delegatee_pubkey}:#{conditions}")
-      signature = Schnorr.sign(Array(delegation_message_sha256).pack('H*'), Array(@private_key).pack('H*')).encode.unpack('H*')[0]
+      signature = Schnorr.sign(Array(delegation_message_sha256).pack('H*'), Array(@private_key).pack('H*')).encode.unpack1('H*')
       [
-        "delegation",
+        'delegation',
         @public_key,
         conditions,
         signature
@@ -290,11 +296,6 @@ module Struto
 
     def reset_delegation
       @nip26_delegation_tag = nil
-    end
-
-    def self.verify_delegation_signature(delegatee_pubkey, tag)
-      delegation_message_sha256 = Digest::SHA256.hexdigest("nostr:delegation:#{delegatee_pubkey}:#{tag[2]}")
-      Schnorr.valid_sig?(Array(delegation_message_sha256).pack('H*'), Array(tag[1]).pack('H*'), Array(tag[3]).pack('H*'))
     end
 
     def build_req_event(filters)
@@ -310,11 +311,11 @@ module Struto
     end
 
     def match_pow_difficulty?(event_id)
-      @pow_difficulty_target.nil? || @pow_difficulty_target == [event_id].pack("H*").unpack("B*")[0].index('1')
+      @pow_difficulty_target.nil? || @pow_difficulty_target == [event_id].pack('H*').unpack1('B*').index('1')
     end
 
-    def set_pow_difficulty_target(n)
-      @pow_difficulty_target = n
+    def set_pow_difficulty_target(difficulty)
+      @pow_difficulty_target = difficulty
     end
 
     def post_event(event, relay)
@@ -331,7 +332,7 @@ module Struto
       end
 
       ws.on :error do |e|
-        puts 'WebSocket Error'
+        puts "WebSocket Error => #{e.message}"
         ws.close
       end
 
