@@ -9,6 +9,7 @@ require 'unicode/emoji'
 require 'websocket-client-simple'
 require 'struto/nips/time_calendar_event'
 require 'struto/nips/date_calendar_event'
+require 'struto/nips/poll_event'
 
 # * Ruby library to interact with the Nostr protocol
 
@@ -234,41 +235,11 @@ module Struto
       build_event(event)
     end
 
-    # Poll Notes (NIP-69)
-    # @see https://github.com/nostr-protocol/nips/pull/320
-    #
-    # @param body [String] note body content
-    # @param options [Array] list of poll options
-    # @param metadata [Hash] list of poll metadata
-    # @option metadata [String] :value_minimum the minimum amount of satoshis to pay
-    # @option metadata [String] :value_maximum the maximum amount of satoshis to pay
-    # @option metadata [String] :closed_at the timestamp to close the poll at
-    # @option metadata [String] :reference the parent note to link to
-    def build_poll_event(body, options, metadata = {})
-      raise 'Invalid options' unless options.is_a?(Array) && options.count >= 2
+    def build_poll_event(content, poll_options, metadata = {})
+      instance = Struto::Nips::PollEvent.new(content, poll_options, metadata)
 
-      sanitized_metadata = metadata.compact.slice(
-        :value_minimum, :value_maximum, :closed_at, :reference
-      )
-
-      tags = [['p', @public_key]].tap do |data|
-        options.each_with_index do |option, index|
-          data.push ['poll_option', index.to_s, option]
-        end
-
-        data.push ['value_minimum', sanitized_metadata[:value_minimum].to_s] unless sanitized_metadata[:value_minimum].blank?
-        data.push ['value_maximum', sanitized_metadata[:value_maximum].to_s] unless sanitized_metadata[:value_maximum].blank?
-        data.push ['closed_at', sanitized_metadata[:closed_at].to_s] unless sanitized_metadata[:closed_at].blank?
-        data.push ['e', sanitized_metadata[:reference]] unless sanitized_metadata[:reference].blank?
-      end
-
-      event = {
-        pubkey: @public_key,
-        created_at: now,
-        kind: 6969,
-        tags: tags,
-        content: body
-      }
+      event = instance.call
+      event[:pubkey] = @public_key
 
       build_event(event)
     end
