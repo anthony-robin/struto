@@ -19,13 +19,13 @@ gem install struto
 ```ruby
 require "struto"
 
-nostr = Struto::Nostr.new({private_key: "964b29795d621cdacf05fd94fb23206c88742db1fa50b34d7545f3a2221d8124"})
-# <Struto::Nostr:0x00000001063ffa28 @private_key="964b29795d621cdacf05fd94fb23206c88742db1fa50b34d7545f3a2221d8124" @public_key="da15317263858ad496a21c79c6dc5f5cf9af880adf3a6794dbbf2883186c9d81">
+nostr = Struto::Nostr.new(private_key: "964b29795d621cdacf05fd94fb23206c88742db1fa50b34d7545f3a2221d8124")
+# => <Struto::Nostr:0x00000001063ffa28 @private_key="964b29795d621cdacf05fd94fb23206c88742db1fa50b34d7545f3a2221d8124" @public_key="da15317263858ad496a21c79c6dc5f5cf9af880adf3a6794dbbf2883186c9d81">
 
 nostr.bech32_keys
 # => {:public_key=>"npub1mg2nzunrsk9df94zr3uudhzltnu6lzq2muax09xmhu5gxxrvnkqsvpjg3p", :private_key=>"nsec1je9jj72avgwd4nc9lk20kgeqdjy8gtd3lfgtxnt4ghe6ygsasyjq7kh6c4"}
 
-nostr = Struto::Nostr.new({private_key: "nsec1je9jj72avgwd4nc9lk20kgeqdjy8gtd3lfgtxnt4ghe6ygsasyjq7kh6c4"})
+nostr = Struto::Nostr.new(private_key: "nsec1je9jj72avgwd4nc9lk20kgeqdjy8gtd3lfgtxnt4ghe6ygsasyjq7kh6c4")
 # => #<Struto::Nostr:0x00000001060952c0 @private_key="964b29795d621cdacf05fd94fb23206c88742db1fa50b34d7545f3a2221d8124", @public_key="da15317263858ad496a21c79c6dc5f5cf9af880adf3a6794dbbf2883186c9d81">
 
 nostr.keys
@@ -227,9 +227,114 @@ nostr.reset_delegation
 #=> nil
 ```
 
+### Create a calendar event (NIP-52)
+
+- [NIP-52](https://github.com/nostr-protocol/nips/blob/master/52.md)
+
+#### Date based calendar event (kind 31922)
+
+- [Kind 31922](https://github.com/nostr-protocol/nips/blob/master/52.md#date-based-calendar-event)
+
+```ruby
+nostr.build_date_calendar_event(
+  "Explosive shock and awe I only speak American country-fried Applebee's.",
+  "Milkshakes patriotic southwest breakfast burrito microwaved Harley Davidson super bowl Hot Pockets second amendment rights. Low taxes 18-wheeler CSI: Miami liberty Home Depot. Checkers exploding stock market Harley Davidson Lynyrd Skynyrd.Hot dogs nuclear-powered aircraft carrier freedom fries Van Halen tomahawk cruise missile better dead than red."
+  ,
+  dates: {
+    start: 1.week.from_now.to_date, # or '2023-12-12'
+    end: 2.weeks.from_now.to_date, # or '2023-12-19'
+  },
+  location: {
+    location: '170 Schinner Causeway',
+    latitude: 39.9760149034563,
+    longitude: -77.0739996811784
+  },
+  participants: [
+    'a3bae54c0141539e0ffb771ee63dcc334f3f4d0eece9a1a900f9045a8af57c1d',
+    '7bc9a69675ab8ad508732e953a19c8bd08c34f39c21feff5b3864e46062274d3'
+  ],
+  hashtags: ['optio', 'ad', 'necessitatibus'],
+  references: ['http://borer.us']
+)
+
+#=>
+#["EVENT",
+# {:kind=>31922,
+#  :created_at=>1701553659,
+#  :tags=>
+#   [[:d, "d9a2cd6b-3356-4e91-9b5e-a90c970a7b67"],
+#    [:name, "Explosive shock and awe I only speak American country-fried Applebee's."],
+#    [:start, '2023-12-12'],
+#    [:end, '2023-12-19'],
+#    [:location, "170 Schinner Causeway"],
+#    [:g, "dqgkjytbzbcs"],
+#    [:p, "a3bae54c0141539e0ffb771ee63dcc334f3f4d0eece9a1a900f9045a8af57c1d"],
+#    [:p, "7bc9a69675ab8ad508732e953a19c8bd08c34f39c21feff5b3864e46062274d3"],
+#    [:t, "optio"],
+#    [:t, "ad"],
+#    [:t, "necessitatibus"],
+#    [:r, "http://borer.us"]],
+#  :content=> "Milkshakes patriotic southwest breakfast burrito microwaved Harley Davidson super bowl Hot Pockets second amendment rights. Low taxes 18-wheeler CSI: Miami liberty Home Depot. Checkers exploding stock market Harley Davidson Lynyrd Skynyrd.Hot dogs nuclear-powered aircraft carrier freedom fries Van Halen tomahawk cruise missile better dead than red.",
+#  :pubkey=>"8758a9fd232f0fe9a7afc8456a40d57bc46e2a586d37641c2d6c77bcac938f93",
+#  :id=>"c057093e3f46bb300db8859daad07d766ce5daeb65835703534959dfb7ba312a",
+#  :sig=> "e0a779509ab0308a485c10f9e95927b0b1d983595bed85ae5d84e70ed034823289abfe2539414ab318d9b3505e18d1334c9a2494fa8ce388cda1e77560447405"}]
+```
+
+#### Time based calendar event (kind 31923)
+
+- [Kind 31923](https://github.com/nostr-protocol/nips/blob/master/52.md#time-based-calendar-event)
+
+```ruby
+nostr.build_time_calendar_event(
+  "Explosive shock and awe I only speak American country-fried Applebee's.",
+  "Milkshakes patriotic southwest breakfast burrito microwaved Harley Davidson super bowl Hot Pockets second amendment rights. Low taxes 18-wheeler CSI: Miami liberty Home Depot. Checkers exploding stock market Harley Davidson Lynyrd Skynyrd.Hot dogs nuclear-powered aircraft carrier freedom fries Van Halen tomahawk cruise missile better dead than red."
+  ,
+  timestamps: {
+    start: 1.day.from_now, # or 1701684118
+    start_tzid: 'Europe/Belgrade',
+    end: 2.days.from_now # or 1701770911
+  },
+  location: {
+    location: '170 Schinner Causeway',
+    latitude: 39.9760149034563,
+    longitude: -77.0739996811784
+  },
+  participants: [
+    'a3bae54c0141539e0ffb771ee63dcc334f3f4d0eece9a1a900f9045a8af57c1d',
+    '7bc9a69675ab8ad508732e953a19c8bd08c34f39c21feff5b3864e46062274d3'
+  ],
+  hashtags: ['optio', 'ad', 'necessitatibus'],
+  references: ['http://borer.us']
+)
+
+#=>
+#["EVENT",
+# {:kind=>31923,
+#  :created_at=>1701553659,
+#  :tags=>
+#   [[:d, "d9a2cd6b-3356-4e91-9b5e-a90c970a7b67"],
+#    [:name, "Explosive shock and awe I only speak American country-fried Applebee's."],
+#    [:start, 1701684118],
+#    [:start_tzid, "Europe/Belgrade"],
+#    [:end, 1701770911],
+#    [:end_tzid, "Europe/Belgrade"],
+#    [:location, "170 Schinner Causeway"],
+#    [:g, "dqgkjytbzbcs"],
+#    [:p, "a3bae54c0141539e0ffb771ee63dcc334f3f4d0eece9a1a900f9045a8af57c1d"],
+#    [:p, "7bc9a69675ab8ad508732e953a19c8bd08c34f39c21feff5b3864e46062274d3"],
+#    [:t, "optio"],
+#    [:t, "ad"],
+#    [:t, "necessitatibus"],
+#    [:r, "http://borer.us"]],
+#  :content=> "Milkshakes patriotic southwest breakfast burrito microwaved Harley Davidson super bowl Hot Pockets second amendment rights. Low taxes 18-wheeler CSI: Miami liberty Home Depot. Checkers exploding stock market Harley Davidson Lynyrd Skynyrd.Hot dogs nuclear-powered aircraft carrier freedom fries Van Halen tomahawk cruise missile better dead than red.",
+#  :pubkey=>"8758a9fd232f0fe9a7afc8456a40d57bc46e2a586d37641c2d6c77bcac938f93",
+#  :id=>"c057093e3f46bb300db8859daad07d766ce5daeb65835703534959dfb7ba312a",
+#  :sig=> "e0a779509ab0308a485c10f9e95927b0b1d983595bed85ae5d84e70ed034823289abfe2539414ab318d9b3505e18d1334c9a2494fa8ce388cda1e77560447405"}]
+```
+
 ### Create a Poll event (NIP-69)
 
-- [NIP-69](https://github.com/nostr-protocol/nips/pull/320) (unmerged yet)
+- [NIP-69](https://github.com/nostr-protocol/nips/pull/320) (still opened NIP)
 
 ```ruby
 nostr.build_poll_event(

@@ -7,6 +7,8 @@ require 'base64'
 require 'bech32'
 require 'unicode/emoji'
 require 'websocket-client-simple'
+require 'struto/nips/time_calendar_event'
+require 'struto/nips/date_calendar_event'
 
 # * Ruby library to interact with the Nostr protocol
 
@@ -72,7 +74,7 @@ module Struto
     def sign_event(event)
       raise 'Invalid pubkey' unless event[:pubkey].is_a?(String) && event[:pubkey].size == 64
       raise 'Invalid created_at' unless event[:created_at].is_a?(Integer)
-      raise 'Invalid kind' unless (0..29_999).cover?(event[:kind])
+      raise 'Invalid kind' unless (0..31_999).cover?(event[:kind])
       raise 'Invalid tags' unless event[:tags].is_a?(Array)
       raise 'Invalid content' unless event[:content].is_a?(String)
 
@@ -143,7 +145,7 @@ module Struto
 
       event = {
         pubkey: @public_key,
-        created_at: Time.now.utc.to_i,
+        created_at: now,
         kind: 0,
         tags: [],
         content: data.to_json
@@ -155,7 +157,7 @@ module Struto
     def build_note_event(text, channel_key = nil)
       event = {
         pubkey: @public_key,
-        created_at: Time.now.utc.to_i,
+        created_at: now,
         kind: channel_key ? 42 : 1,
         tags: channel_key ? [['e', channel_key]] : [],
         content: text
@@ -169,7 +171,7 @@ module Struto
 
       event = {
         pubkey: @public_key,
-        created_at: Time.now.utc.to_i,
+        created_at: now,
         kind: 2,
         tags: [],
         content: relay
@@ -181,7 +183,7 @@ module Struto
     def build_contact_list_event(contacts)
       event = {
         pubkey: @public_key,
-        created_at: Time.now.utc.to_i,
+        created_at: now,
         kind: 3,
         tags: contacts.map { |c| ['p'] + c },
         content: ''
@@ -195,7 +197,7 @@ module Struto
 
       event = {
         pubkey: @public_key,
-        created_at: Time.now.utc.to_i,
+        created_at: now,
         kind: 4,
         tags: [['p', recipient_public_key]],
         content: encrypted_text
@@ -207,7 +209,7 @@ module Struto
     def build_deletion_event(events, reason = '')
       event = {
         pubkey: @public_key,
-        created_at: Time.now.utc.to_i,
+        created_at: now,
         kind: 5,
         tags: events.map { |e| ['e', e] },
         content: reason
@@ -223,7 +225,7 @@ module Struto
 
       event = {
         pubkey: @public_key,
-        created_at: Time.now.utc.to_i,
+        created_at: now,
         kind: 7,
         tags: [['e', event], ['p', author]],
         content: reaction
@@ -262,11 +264,43 @@ module Struto
 
       event = {
         pubkey: @public_key,
-        created_at: Time.now.utc.to_i,
+        created_at: now,
         kind: 6969,
         tags: tags,
         content: body
       }
+
+      build_event(event)
+    end
+
+    def build_time_calendar_event(name, content, timestamps: {}, location: {}, participants: [], hashtags: [], references: [])
+      instance = Struto::Nips::TimeCalendarEvent.new(
+        name, content,
+        timestamps: timestamps,
+        location: location,
+        participants: participants,
+        hashtags: hashtags,
+        references: references
+      )
+
+      event = instance.call
+      event[:pubkey] = @public_key
+
+      build_event(event)
+    end
+
+    def build_date_calendar_event(name, content, dates: {}, location: {}, participants: [], hashtags: [], references: [])
+      instance = Struto::Nips::DateCalendarEvent.new(
+        name, content,
+        dates: dates,
+        location: location,
+        participants: participants,
+        hashtags: hashtags,
+        references: references
+      )
+
+      event = instance.call
+      event[:pubkey] = @public_key
 
       build_event(event)
     end
@@ -316,6 +350,10 @@ module Struto
 
     def set_pow_difficulty_target(difficulty)
       @pow_difficulty_target = difficulty
+    end
+
+    def now
+      Time.now.utc.to_i
     end
 
     def post_event(event, relay)
