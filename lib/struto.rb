@@ -10,6 +10,7 @@ require 'websocket-client-simple'
 require 'struto/nips/time_calendar_event'
 require 'struto/nips/date_calendar_event'
 require 'struto/nips/poll_event'
+require 'struto/nips/metadata_event'
 
 # * Ruby library to interact with the Nostr protocol
 
@@ -125,32 +126,11 @@ module Struto
       ['EVENT', event]
     end
 
-    # Metadata (NIP-01 / NIP-24)
-    # @see https://github.com/nostr-protocol/nips/blob/master/01.md
-    # @see https://github.com/nostr-protocol/nips/blob/master/24.md
-    #
-    # @param metadata [Hash] list of nostr account metadata
-    # @option metadata [String] :name
-    # @option metadata [String] :display_name
-    # @option metadata [String] :about the profile description
-    # @option metadata [String] :picture the profile picture
-    # @option metadata [String] :banner the profile banner
-    # @option metadata [String] :nip05 the NIP-05 verification address
-    # @option metadata [String] :lud16 the lightning network address
-    # @option metadata [String] :website
     def build_metadata_event(metadata = {})
-      data = metadata.slice(
-        :name, :display_name, :about, :picture,
-        :banner, :nip05, :lud16, :website
-      )
+      instance = Struto::Nips::MetadataEvent.new(metadata)
 
-      event = {
-        pubkey: @public_key,
-        created_at: now,
-        kind: 0,
-        tags: [],
-        content: data.to_json
-      }
+      event = instance.call
+      event[:pubkey] = @public_key
 
       build_event(event)
     end
